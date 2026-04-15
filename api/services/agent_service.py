@@ -1,6 +1,7 @@
 """Agent service wrapper for DataLens"""
 from agent.agent import NL2SQLAgent
 from agent.config import ConfigManager
+from api.services.mcp_service import MCPService
 from typing import Optional
 import re
 
@@ -13,6 +14,7 @@ class AgentService:
     def __init__(self, config_path: str = "config.json"):
         self.config_manager = ConfigManager(config_path)
         self._agent_cache: dict = {}
+        self.use_mcp = self.config_manager.config.use_mcp
 
     @classmethod
     def get_instance(cls) -> "AgentService":
@@ -40,24 +42,38 @@ class AgentService:
         if not db_config:
             raise ValueError(f"Database '{actual_db}' not found")
 
-        # Create new agent each time to ensure fresh connection
-        if actual_db in self._agent_cache:
-            try:
-                self._agent_cache[actual_db].close()
-            except:
-                pass
+        # If using MCP, reuse agent instances (MCP handles connection pooling)
+        if self.use_mcp:
+            if actual_db not in self._agent_cache:
+                agent = NL2SQLAgent(
+                    self.config_manager.config.model,
+                    db_config,
+                    config_manager=self.config_manager,
+                    use_mcp=True
+                )
+                self._agent_cache[actual_db] = agent
+            return self._agent_cache[actual_db]
+        else:
+            # Legacy mode: create new agent each time
+            if actual_db in self._agent_cache:
+                try:
+                    self._agent_cache[actual_db].close()
+                except:
+                    pass
 
-        agent = NL2SQLAgent(
-            self.config_manager.config.model,
-            db_config
-        )
-        self._agent_cache[actual_db] = agent
-        return agent
+            agent = NL2SQLAgent(
+                self.config_manager.config.model,
+                db_config,
+                config_manager=self.config_manager,
+                use_mcp=False
+            )
+            self._agent_cache[actual_db] = agent
+            return agent
 
-    def query(self, query: str, db_name: Optional[str] = None) -> str:
+    async def query(self, query: str, db_name: Optional[str] = None) -> str:
         """Execute query and return response"""
         agent = self.get_agent(db_name)
-        return agent.query(query)
+        return await agent.query(query)
 
     def extract_sql(self, text: str) -> Optional[str]:
         """Extract SQL from response text"""
@@ -81,15 +97,18 @@ class AgentService:
         """Clear agent cache"""
         if db_name:
             if db_name in self._agent_cache:
-                try:
-                    self._agent_cache[db_name].close()
-                except:
-                    pass
+                # Only close if not using MCP (MCP manages connections)
+                if not self.use_mcp:
+                    try:
+                        self._agent_cache[db_name].close()
+                    except:
+                        pass
                 del self._agent_cache[db_name]
         else:
-            for agent in self._agent_cache.values():
-                try:
-                    agent.close()
-                except:
-                    pass
+            if not self.use_mcp:
+                for agent in self._agent_cache.values():
+                    try:
+                        agent.close()
+                    except:
+                        pass
             self._agent_cache.clear()

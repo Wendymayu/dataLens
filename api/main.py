@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from api.routers import chat, databases, config, conversations
 from api.services.agent_service import AgentService
+from api.services.mcp_service import MCPService
 
 
 @asynccontextmanager
@@ -12,10 +13,23 @@ async def lifespan(app: FastAPI):
     """Application lifecycle management"""
     # Startup
     print("Starting DataLens API...")
-    AgentService.get_instance()
+
+    # Initialize MCP Service if enabled
+    agent_service = AgentService.get_instance()
+    if agent_service.use_mcp:
+        print("Initializing MCP Service...")
+        await MCPService.startup()
+
     yield
+
     # Shutdown
     print("Shutting down DataLens API...")
+
+    # Shutdown MCP Service if enabled
+    if agent_service.use_mcp:
+        print("Shutting down MCP Service...")
+        await MCPService.shutdown()
+
     AgentService.reset_instance()
 
 
