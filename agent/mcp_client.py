@@ -36,7 +36,7 @@ class MCPClientWrapper:
             python_exe = sys.executable
 
             # Get MCP server script path
-            server_script = Path(__file__).parent.parent / "mcp" / "server.py"
+            server_script = Path(__file__).parent.parent / "mcp_server" / "server.py"
 
             # Prepare database configurations as environment variable
             db_configs = {}
@@ -53,7 +53,7 @@ class MCPClientWrapper:
             # Create server parameters
             server_params = StdioServerParameters(
                 command=python_exe,
-                args=["-m", "mcp.server"],
+                args=["-m", "mcp_server.server"],
                 env={
                     **subprocess.os.environ,
                     "DATALENS_DB_CONFIG": json.dumps(db_configs)

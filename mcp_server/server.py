@@ -9,8 +9,8 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
-from mcp.tools.database_tools import DatabaseTools
-from mcp.connection_pool import ConnectionPoolManager
+from mcp_server.tools.database_tools import DatabaseTools
+from mcp_server.connection_pool import ConnectionPoolManager
 
 # Configure logging
 logging.basicConfig(

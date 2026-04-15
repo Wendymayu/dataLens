@@ -1,6 +1,6 @@
 """Database tools for MCP Server"""
 from typing import Any, Dict, List
-from mcp.connection_pool import ConnectionPoolManager
+from mcp_server.connection_pool import ConnectionPoolManager
 import logging
 
 logger = logging.getLogger(__name__)
