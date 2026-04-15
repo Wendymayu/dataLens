@@ -70,10 +70,10 @@ class AgentService:
             self._agent_cache[actual_db] = agent
             return agent
 
-    def query(self, query: str, db_name: Optional[str] = None) -> str:
+    async def query(self, query: str, db_name: Optional[str] = None) -> str:
         """Execute query and return response"""
         agent = self.get_agent(db_name)
-        return agent.query(query)
+        return await agent.query(query)
 
     def extract_sql(self, text: str) -> Optional[str]:
         """Extract SQL from response text"""

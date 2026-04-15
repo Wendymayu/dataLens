@@ -86,12 +86,30 @@ class ConnectionPoolManager:
             results = cursor.fetchall()
             cursor.close()
 
-            # Limit results to 100 rows
-            if len(results) > 100:
-                logger.warning(f"Query returned {len(results)} rows, truncating to 100")
-                results = results[:100]
+            # Convert non-serializable types (date, datetime, Decimal, etc.)
+            import datetime
+            import decimal
 
-            return results
+            serialized_results = []
+            for row in results:
+                serialized_row = {}
+                for key, value in row.items():
+                    if isinstance(value, (datetime.date, datetime.datetime)):
+                        serialized_row[key] = value.isoformat()
+                    elif isinstance(value, decimal.Decimal):
+                        serialized_row[key] = float(value)
+                    elif isinstance(value, bytes):
+                        serialized_row[key] = value.decode('utf-8', errors='replace')
+                    else:
+                        serialized_row[key] = value
+                serialized_results.append(serialized_row)
+
+            # Limit results to 100 rows
+            if len(serialized_results) > 100:
+                logger.warning(f"Query returned {len(serialized_results)} rows, truncating to 100")
+                serialized_results = serialized_results[:100]
+
+            return serialized_results
 
         except Error as e:
             logger.error(f"Query execution failed for {db_name}: {e}")

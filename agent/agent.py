@@ -13,19 +13,29 @@ class NL2SQLAgent:
         self.model_config = model_config
         self.use_mcp = use_mcp
         self.db_name = db_config.name
+        self._schema = None
 
         if self.use_mcp and config_manager:
             # Use MCP Client
             self.mcp_client = MCPClientWrapper(config_manager)
             self.db_manager = None
-            self.schema = self.mcp_client.get_schema(self.db_name)
         else:
             # Use legacy DatabaseManager
             self.db_manager = DatabaseManager(db_config)
             self.mcp_client = None
-            self.schema = self.db_manager.get_schema()
+            self._schema = self.db_manager.get_schema()
 
         self._init_client()
+
+    @property
+    def schema(self):
+        """Get schema (returns cached schema)"""
+        return self._schema or ""
+
+    async def _ensure_schema_loaded(self):
+        """Ensure schema is loaded (async)"""
+        if self._schema is None and self.use_mcp:
+            self._schema = await self.mcp_client.get_schema(self.db_name)
 
     def _init_client(self):
         """Initialize LLM client based on provider"""
@@ -50,8 +60,11 @@ class NL2SQLAgent:
         else:
             raise ValueError(f"Unsupported provider: {provider}")
 
-    def _call_anthropic(self, user_query: str) -> str:
+    async def _call_anthropic(self, user_query: str) -> str:
         """Call Anthropic Claude API"""
+        # Ensure schema is loaded
+        await self._ensure_schema_loaded()
+
         tools = [
             {
                 "name": "execute_query",
@@ -114,7 +127,7 @@ Guidelines:
                                 sql = block.input["sql"]
                                 # Use MCP or legacy database manager
                                 if self.use_mcp:
-                                    results = self.mcp_client.execute_query(self.db_name, sql)
+                                    results = await self.mcp_client.execute_query(self.db_name, sql)
                                 else:
                                     results = self.db_manager.execute_query(sql)
                                 tool_results.append(
@@ -196,8 +209,11 @@ Provide:
         except Exception as e:
             return f"Error calling Zhipu: {e}"
 
-    def _call_openai_compatible(self, user_query: str) -> str:
+    async def _call_openai_compatible(self, user_query: str) -> str:
         """Call OpenAI-compatible API (支持阿里云、智谱等兼容接口)"""
+        # Ensure schema is loaded
+        await self._ensure_schema_loaded()
+
         messages = [
             {
                 "role": "system",
@@ -236,7 +252,7 @@ IMPORTANT RULES:
                 try:
                     # 执行SQL
                     if self.use_mcp:
-                        results = self.mcp_client.execute_query(self.db_name, sql_query)
+                        results = await self.mcp_client.execute_query(self.db_name, sql_query)
                     else:
                         results = self.db_manager.execute_query(sql_query)
                     result_count = len(results)
@@ -292,24 +308,24 @@ IMPORTANT RULES:
 
         return None
 
-    def query(self, user_query: str) -> str:
+    async def query(self, user_query: str) -> str:
         """Process user query and return response"""
         provider = self.model_config.provider.lower()
 
         if provider == "anthropic":
-            return self._call_anthropic(user_query)
+            return await self._call_anthropic(user_query)
         elif provider == "qwen":
             return self._call_qwen(user_query)
         elif provider == "zhipu":
             return self._call_zhipu(user_query)
         elif provider == "openai-compatible":
-            return self._call_openai_compatible(user_query)
+            return await self._call_openai_compatible(user_query)
         else:
             return f"Unsupported provider: {provider}"
 
-    def close(self):
+    async def close(self):
         """Clean up resources"""
         if self.use_mcp and self.mcp_client:
-            self.mcp_client.close()
+            await self.mcp_client.close()
         elif self.db_manager:
             self.db_manager.disconnect()

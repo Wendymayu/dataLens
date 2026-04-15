@@ -156,7 +156,7 @@ class DataLensMCPServer:
 
                 return [TextContent(
                     type="text",
-                    text=json.dumps(result, ensure_ascii=False, indent=2)
+                    text=json.dumps(result, ensure_ascii=False, indent=2, default=str)
                 )]
 
             except Exception as e:

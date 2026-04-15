@@ -52,7 +52,7 @@ class MCPService:
         """Shutdown MCP Service"""
         try:
             if cls._mcp_client:
-                cls._mcp_client.close()
+                await cls._mcp_client.close()
                 cls._mcp_client = None
             cls._instance = None
             cls._config_manager = None

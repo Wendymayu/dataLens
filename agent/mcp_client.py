@@ -27,6 +27,7 @@ class MCPClientWrapper:
         self.server_process: Optional[subprocess.Popen] = None
         self._read_stream = None
         self._write_stream = None
+        self._stdio_transport = None
         self._initialized = False
 
     async def _start_server(self):
@@ -60,12 +61,17 @@ class MCPClientWrapper:
                 }
             )
 
-            # Start stdio client
-            self._read_stream, self._write_stream = await stdio_client(server_params)
+            # Start stdio client using async with
+            self._stdio_transport = stdio_client(server_params)
+            # Manually enter the context - __aenter__ returns a coroutine
+            enter_coro = self._stdio_transport.__aenter__()
+            streams = await enter_coro
+            self._read_stream, self._write_stream = streams
 
             # Create session
             self.session = ClientSession(self._read_stream, self._write_stream)
-            await self.session.__aenter__()
+            session_enter_coro = self.session.__aenter__()
+            await session_enter_coro
 
             # Initialize session
             await self.session.initialize()
@@ -109,7 +115,7 @@ class MCPClientWrapper:
             logger.error(f"Tool call failed: {tool_name}, error: {e}")
             return {"success": False, "error": str(e)}
 
-    def execute_query(self, db_name: str, sql: str) -> List[Dict[str, Any]]:
+    async def execute_query(self, db_name: str, sql: str) -> List[Dict[str, Any]]:
         """Execute SQL query
 
         Args:
@@ -119,10 +125,10 @@ class MCPClientWrapper:
         Returns:
             List of result rows as dictionaries
         """
-        result = asyncio.run(self._call_tool("execute_query", {
+        result = await self._call_tool("execute_query", {
             "db_name": db_name,
             "sql": sql
-        }))
+        })
 
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error")
@@ -130,7 +136,7 @@ class MCPClientWrapper:
 
         return result.get("results", [])
 
-    def get_schema(self, db_name: str) -> str:
+    async def get_schema(self, db_name: str) -> str:
         """Get database schema
 
         Args:
@@ -139,9 +145,9 @@ class MCPClientWrapper:
         Returns:
             Schema description as string
         """
-        result = asyncio.run(self._call_tool("get_schema", {
+        result = await self._call_tool("get_schema", {
             "db_name": db_name
-        }))
+        })
 
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error")
@@ -149,7 +155,7 @@ class MCPClientWrapper:
 
         return result.get("schema", "")
 
-    def get_table_sample(self, db_name: str, table_name: str, limit: int = 5) -> List[Dict[str, Any]]:
+    async def get_table_sample(self, db_name: str, table_name: str, limit: int = 5) -> List[Dict[str, Any]]:
         """Get sample data from table
 
         Args:
@@ -160,11 +166,11 @@ class MCPClientWrapper:
         Returns:
             List of sample rows
         """
-        result = asyncio.run(self._call_tool("get_table_sample", {
+        result = await self._call_tool("get_table_sample", {
             "db_name": db_name,
             "table_name": table_name,
             "limit": limit
-        }))
+        })
 
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error")
@@ -172,21 +178,21 @@ class MCPClientWrapper:
 
         return result.get("results", [])
 
-    def refresh_schema(self, db_name: str):
+    async def refresh_schema(self, db_name: str):
         """Refresh schema cache
 
         Args:
             db_name: Database name
         """
-        result = asyncio.run(self._call_tool("refresh_schema", {
+        result = await self._call_tool("refresh_schema", {
             "db_name": db_name
-        }))
+        })
 
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error")
             raise Exception(f"Schema refresh failed: {error_msg}")
 
-    def test_connection(self, db_name: str) -> bool:
+    async def test_connection(self, db_name: str) -> bool:
         """Test database connection
 
         Args:
@@ -195,9 +201,9 @@ class MCPClientWrapper:
         Returns:
             True if connection is active
         """
-        result = asyncio.run(self._call_tool("test_connection", {
+        result = await self._call_tool("test_connection", {
             "db_name": db_name
-        }))
+        })
 
         return result.get("success", False)
 
@@ -208,10 +214,12 @@ class MCPClientWrapper:
                 await self.session.__aexit__(None, None, None)
                 self.session = None
 
-            if self._read_stream:
-                self._read_stream = None
-            if self._write_stream:
-                self._write_stream = None
+            if self._stdio_transport:
+                await self._stdio_transport.__aexit__(None, None, None)
+                self._stdio_transport = None
+
+            self._read_stream = None
+            self._write_stream = None
 
             self._initialized = False
             logger.info("MCP Server stopped")
@@ -219,7 +227,7 @@ class MCPClientWrapper:
         except Exception as e:
             logger.error(f"Error stopping MCP Server: {e}")
 
-    def close(self):
+    async def close(self):
         """Close MCP Client and stop server"""
         if self._initialized:
-            asyncio.run(self._stop_server())
+            await self._stop_server()
