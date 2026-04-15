@@ -70,7 +70,9 @@ def main():
                         db_config = config_manager.get_database()
                         agent = NL2SQLAgent(
                             config_manager.config.model,
-                            db_config
+                            db_config,
+                            config_manager=config_manager,
+                            use_mcp=config_manager.config.use_mcp
                         )
                         response = agent.query(user_input)
                         agent.close()

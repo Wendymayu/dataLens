@@ -31,6 +31,7 @@ class AppConfig(BaseModel):
     model: ModelConfig
     databases: Dict[str, DatabaseConfig] = Field(default_factory=dict)
     current_database: Optional[str] = None
+    use_mcp: bool = True  # Use MCP for database access (default: True)
 
     class Config:
         json_encoders = {DatabaseConfig: lambda v: v.model_dump()}

@@ -2,16 +2,29 @@
 import json
 from typing import Optional
 from agent.database import DatabaseManager
-from agent.config import ModelConfig, DatabaseConfig
+from agent.config import ModelConfig, DatabaseConfig, ConfigManager
+from agent.mcp_client import MCPClientWrapper
 
 
 class NL2SQLAgent:
     """DataLens Agent that converts natural language to SQL queries"""
 
-    def __init__(self, model_config: ModelConfig, db_config: DatabaseConfig):
+    def __init__(self, model_config: ModelConfig, db_config: DatabaseConfig, config_manager: Optional[ConfigManager] = None, use_mcp: bool = True):
         self.model_config = model_config
-        self.db_manager = DatabaseManager(db_config)
-        self.schema = self.db_manager.get_schema()
+        self.use_mcp = use_mcp
+        self.db_name = db_config.name
+
+        if self.use_mcp and config_manager:
+            # Use MCP Client
+            self.mcp_client = MCPClientWrapper(config_manager)
+            self.db_manager = None
+            self.schema = self.mcp_client.get_schema(self.db_name)
+        else:
+            # Use legacy DatabaseManager
+            self.db_manager = DatabaseManager(db_config)
+            self.mcp_client = None
+            self.schema = self.db_manager.get_schema()
+
         self._init_client()
 
     def _init_client(self):
@@ -99,7 +112,11 @@ Guidelines:
                         if block.name == "execute_query":
                             try:
                                 sql = block.input["sql"]
-                                results = self.db_manager.execute_query(sql)
+                                # Use MCP or legacy database manager
+                                if self.use_mcp:
+                                    results = self.mcp_client.execute_query(self.db_name, sql)
+                                else:
+                                    results = self.db_manager.execute_query(sql)
                                 tool_results.append(
                                     {
                                         "type": "tool_result",
@@ -218,7 +235,10 @@ IMPORTANT RULES:
             if sql_query:
                 try:
                     # 执行SQL
-                    results = self.db_manager.execute_query(sql_query)
+                    if self.use_mcp:
+                        results = self.mcp_client.execute_query(self.db_name, sql_query)
+                    else:
+                        results = self.db_manager.execute_query(sql_query)
                     result_count = len(results)
 
                     # 第二步：让模型分析结果
@@ -289,4 +309,7 @@ IMPORTANT RULES:
 
     def close(self):
         """Clean up resources"""
-        self.db_manager.disconnect()
+        if self.use_mcp and self.mcp_client:
+            self.mcp_client.close()
+        elif self.db_manager:
+            self.db_manager.disconnect()
