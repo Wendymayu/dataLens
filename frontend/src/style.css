@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-color: #3b82f6;
+  --bg-color: #f3f4f6;
+  --sidebar-bg: #ffffff;
+  --message-user-bg: #eff6ff;
+  --message-assistant-bg: #f9fafb;
+}
+
+.dark {
+  --bg-color: #111827;
+  --sidebar-bg: #1f2937;
+  --message-user-bg: #1e3a5f;
+  --message-assistant-bg: #1f2937;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Markdown styling */
+.prose {
+  max-width: none;
+}
+
+.prose .code-block {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.prose .code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.prose .code-lang {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.prose .copy-btn {
+  font-size: 12px;
+  color: #3b82f6;
+  background: transparent;
+  border: 1px solid #3b82f6;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.prose .copy-btn:hover {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.prose .copy-btn.copied {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+}
+
+.prose .code-block code {
+  display: block;
+  padding: 16px;
+  overflow-x: auto;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1f2937;
+}
+
+.prose code:not(.hljs) {
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  color: #374151;
+}
+
+/* SQL 语法高亮 - 白底配色 */
+.prose .code-block .hljs-keyword {
+  color: #7c3aed;
+}
+
+.prose .code-block .hljs-string {
+  color: #059669;
+}
+
+.prose .code-block .hljs-number {
+  color: #d97706;
+}
+
+.prose .code-block .hljs-function {
+  color: #3b82f6;
+}
+
+.prose .code-block .hljs-comment {
+  color: #9ca3af;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}

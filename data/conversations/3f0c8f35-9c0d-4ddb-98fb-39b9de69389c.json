@@ -1,0 +1,23 @@
+{
+  "id": "3f0c8f35-9c0d-4ddb-98fb-39b9de69389c",
+  "title": "\u6709\u591a\u5c11\u4f1a\u5458\u7528\u6237",
+  "database": "ecommerce",
+  "created_at": "2026-04-15 15:17:39.983008",
+  "updated_at": "2026-04-15 15:17:46.920856",
+  "messages": [
+    {
+      "id": "53f6a3fe-28af-45bd-bd71-272a4c09da4f",
+      "role": "user",
+      "content": "\u6709\u591a\u5c11\u4f1a\u5458\u7528\u6237",
+      "sql": null,
+      "created_at": "2026-04-15 15:17:39.998637"
+    },
+    {
+      "id": "3da79e46-fa64-4e69-845a-256fb94e95d6",
+      "role": "assistant",
+      "content": "```sql\nSELECT COUNT(*) AS total_users FROM users;\n```\n\n\u76ee\u524d\u7cfb\u7edf\u4e2d\u5171\u6709 **1010 \u540d\u4f1a\u5458\u7528\u6237**\u3002",
+      "sql": "SELECT COUNT(*) AS total_users FROM users;",
+      "created_at": "2026-04-15 15:17:46.920833"
+    }
+  ]
+}

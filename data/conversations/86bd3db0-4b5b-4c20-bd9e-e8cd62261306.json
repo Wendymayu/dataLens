@@ -1,0 +1,23 @@
+{
+  "id": "86bd3db0-4b5b-4c20-bd9e-e8cd62261306",
+  "title": "\u6709\u591a\u5c11VIP\u7528\u6237",
+  "database": "ecommerce",
+  "created_at": "2026-04-15 15:55:26.780451",
+  "updated_at": "2026-04-15 15:55:43.775045",
+  "messages": [
+    {
+      "id": "dd97b0e7-588d-449f-b194-b6dd010aa5f7",
+      "role": "user",
+      "content": "\u6709\u591a\u5c11VIP\u7528\u6237",
+      "sql": null,
+      "created_at": "2026-04-15 15:55:26.805403"
+    },
+    {
+      "id": "361f124d-dce4-44ba-875d-c6afb0062e28",
+      "role": "assistant",
+      "content": "```sql\nSELECT COUNT(*) AS vip_count FROM users WHERE level = 'VIP\u4f1a\u5458';\n```\n\n\u76ee\u524d\u5171\u6709 253 \u540d VIP \u7528\u6237\u3002",
+      "sql": "SELECT COUNT(*) AS vip_count FROM users WHERE level = 'VIP\u4f1a\u5458';",
+      "created_at": "2026-04-15 15:55:43.775021"
+    }
+  ]
+}

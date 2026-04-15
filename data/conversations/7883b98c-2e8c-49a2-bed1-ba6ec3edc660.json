@@ -1,0 +1,93 @@
+{
+  "id": "7883b98c-2e8c-49a2-bed1-ba6ec3edc660",
+  "title": "\u5f53\u524d\u7cfb\u7edf\u6709\u591a\u5c11\u7528\u6237",
+  "database": "modelPlatform",
+  "created_at": "2026-04-15 11:39:43.892455",
+  "updated_at": "2026-04-15 14:29:44.236511",
+  "messages": [
+    {
+      "id": "11469882-a477-4b52-8daa-655d91752624",
+      "role": "user",
+      "content": "\u5f53\u524d\u7cfb\u7edf\u6709\u591a\u5c11\u7528\u6237",
+      "sql": null,
+      "created_at": "2026-04-15 11:39:43.904156"
+    },
+    {
+      "id": "e7f31975-66c0-4a00-83d5-28df7ece55b7",
+      "role": "assistant",
+      "content": "\u5f53\u524d\u7cfb\u7edf\u5171\u6709 3 \u540d\u7528\u6237\u3002",
+      "sql": null,
+      "created_at": "2026-04-15 11:40:00.788084"
+    },
+    {
+      "id": "88111a1b-5c67-41fa-9f20-22a035a6c5b2",
+      "role": "user",
+      "content": "\u6709\u591a\u5c11\u6a21\u578b",
+      "sql": null,
+      "created_at": "2026-04-15 11:40:09.499724"
+    },
+    {
+      "id": "3704daa4-bc18-4246-8af1-c79d0938439b",
+      "role": "assistant",
+      "content": "\u76ee\u524d\u6570\u636e\u5e93\u4e2d\u5171\u6709 **18 \u4e2a\u6a21\u578b**\u3002",
+      "sql": null,
+      "created_at": "2026-04-15 11:40:19.452178"
+    },
+    {
+      "id": "ff992743-c894-4a9b-aadd-e3554747769c",
+      "role": "user",
+      "content": "\u53ef\u4ee5\u5217\u5199\u8be6\u7ec6\u7684\u6a21\u578b\u5417",
+      "sql": null,
+      "created_at": "2026-04-15 11:40:35.071459"
+    },
+    {
+      "id": "dfaeac0b-cdda-4a88-89a8-5b95c5183371",
+      "role": "assistant",
+      "content": "\u4ee5\u4e0b\u662f\u5e73\u53f0\u4e0a\u7684\u8be6\u7ec6\u6a21\u578b\u5217\u8868\uff1a\n\n## \ud83d\udccb \u6a21\u578b\u8be6\u60c5\uff08\u663e\u793a\u524d10\u4e2a\uff09\n\n### \ud83d\udfe0 Anthropic \u63d0\u4f9b\u5546\n\n| \u6a21\u578b | \u663e\u793a\u540d\u79f0 | \u7c7b\u578b | \u8f93\u5165\u4ef7\u683c | \u8f93\u51fa\u4ef7\u683c | \u6700\u5927tokens | \u4e0a\u4e0b\u6587\u7a97\u53e3 |\n|------|----------|------|----------|----------|------------|------------|\n| claude-3-opus-20240229 | Claude 3 Opus | chat | $0.015/1K | $0.075/1K | 4,096 | 200,000 |\n| claude-3-5-sonnet-20241022 | Claude 3.5 Sonnet | chat | $0.003/1K | $0.015/1K | 8,192 | 200,000 |\n| claude-3-haiku-20240307 | Claude 3 Haiku | chat | $0.0003/1K | $0.0013/1K | 4,096 | 200,000 |\n\n### \ud83d\udd35 DeepSeek \u63d0\u4f9b\u5546\n\n| \u6a21\u578b | \u663e\u793a\u540d\u79f0 | \u7c7b\u578b | \u8f93\u5165\u4ef7\u683c | \u8f93\u51fa\u4ef7\u683c | \u6700\u5927tokens | \u4e0a\u4e0b\u6587\u7a97\u53e3 |\n|------|----------|------|----------|----------|------------|------------|\n| deepseek-chat | DeepSeek Chat | chat | $0.001/1K | $0.002/1K | 4,096 | 64,000 |\n| deepseek-coder | DeepSeek Coder | chat | $0.001/1K | $0.002/1K | 4,096 | 64,000 |\n\n### \ud83d\udfe2 Moonshot \u63d0\u4f9b\u5546\n\n| \u6a21\u578b | \u663e\u793a\u540d\u79f0 | \u7c7b\u578b | \u8f93\u5165\u4ef7\u683c | \u8f93\u51fa\u4ef7\u683c | \u6700\u5927tokens | \u4e0a\u4e0b\u6587\u7a97\u53e3 |\n|------|----------|------|----------|----------|------------|------------|\n| moonshot-v1-8k | Kimi (8K) | chat | $0.012/1K | $0.012/1K | 4,096 | 8,192 |\n| moonshot-v1-32k | Kimi (32K) | chat | $0.012/1K | $0.012/1K | 4,096 | 32,768 |\n| moonshot-v1-128k | Kimi (128K) | chat | $0.012/1K | $0.012/1K | 4,096 | 128,000 |\n\n### \ud83d\udfe3 OpenAI \u63d0\u4f9b\u5546\n\n| \u6a21\u578b | \u663e\u793a\u540d\u79f0 | \u7c7b\u578b | \u8f93\u5165\u4ef7\u683c | \u8f93\u51fa\u4ef7\u683c | \u6700\u5927tokens | \u4e0a\u4e0b\u6587\u7a97\u53e3 |\n|------|----------|------|----------|----------|------------|------------|\n| gpt-3.5-turbo | GPT-3.5 Turbo | chat | $0.0005/1K | $0.0015/1K | 4,096 | 16,385 |\n| gpt-4-turbo | GPT-4 Turbo | chat | $0.01/1K | $0.03/1K | 4,096 | 128,000 |\n\n---\n\n**\ud83d\udca1 \u5173\u952e\u53d1\u73b0\uff1a**\n- \u6240\u6709\u6a21\u578b\u5f53\u524d\u72b6\u6001\u5747\u4e3a **\u542f\u7528**\n- \u4ef7\u683c\u6700\u5b9e\u60e0\u7684\u662f **Claude 3 Haiku**\uff08\u8f93\u5165 $0.0003/1K tokens\uff09\n- \u4e0a\u4e0b\u6587\u7a97\u53e3\u6700\u5927\u7684\u662f **Claude \u7cfb\u5217**\uff08200K tokens\uff09\n- DeepSeek \u63d0\u4f9b\u4e86\u6781\u5177\u6027\u4ef7\u6bd4\u7684\u9009\u62e9\n\n\u5982\u9700\u67e5\u770b\u5b8c\u6574\u5217\u8868\uff08\u53ef\u80fd\u6709\u66f4\u591a\u6a21\u578b\uff09\uff0c\u8bf7\u544a\u8bc9\u6211\uff01",
+      "sql": null,
+      "created_at": "2026-04-15 11:41:08.468630"
+    },
+    {
+      "id": "97eae418-f8da-4c43-8a86-e6d78a9427d7",
+      "role": "user",
+      "content": "\u54ea\u4e2a\u7528\u6237\u662f\u5927\u5ba2\u6237",
+      "sql": null,
+      "created_at": "2026-04-15 11:42:17.670923"
+    },
+    {
+      "id": "ee5a14b7-d912-4533-843d-2b4b922e664f",
+      "role": "assistant",
+      "content": "\u6839\u636e\u67e5\u8be2\u7ed3\u679c\uff0c**admin** \u662f\u76ee\u524d\u5e73\u53f0\u4e0a\u7684\u5927\u5ba2\u6237\uff1a\n\n## \ud83d\udcca \u5927\u5ba2\u6237\u5206\u6790\n\n| \u6392\u540d | \u7528\u6237\u540d | \u6d88\u8d39\u91d1\u989d | \u4f7f\u7528\u6b21\u6570 | Token\u7528\u91cf | \u8d26\u6237\u4f59\u989d |\n|------|--------|----------|----------|-----------|----------|\n| \ud83e\udd47 | admin | $0.045 | 1\u6b21 | 1,100 | $10,000 |\n| \ud83e\udd48 | demo_user | $0.025 | 1\u6b21 | 700 | $1,000 |\n| \ud83e\udd49 | test_user | $0.022 | 3\u6b21 | 2,280 | $500 |\n\n## \ud83d\udca1 \u5206\u6790\u7ed3\u8bba\n\n**admin \u662f\u5927\u5ba2\u6237**\uff0c\u7406\u7531\u5982\u4e0b\uff1a\n- \ud83d\udcb0 **\u6d88\u8d39\u6700\u9ad8**\uff1a\u7d2f\u8ba1\u6d88\u8d39 $0.045\uff0c\u4f4d\u5c45\u7b2c\u4e00\n- \ud83d\udcb5 **\u4f59\u989d\u6700\u5927**\uff1a\u8d26\u6237\u4f59\u989d\u9ad8\u8fbe $10,000\uff0c\u8bf4\u660e\u5145\u503c\u91d1\u989d\u5927\uff0c\u9884\u7b97\u5145\u8db3\n- \ud83d\udcc8 **\u6f5c\u529b\u6700\u5927**\uff1a\u9ad8\u989d\u4f59\u989d\u8868\u660e\u5176\u5bf9\u5e73\u53f0\u6709\u957f\u671f\u4f7f\u7528\u8ba1\u5212\n\n**\u8865\u5145\u8bf4\u660e**\uff1a\n- **test_user** \u867d\u7136\u6d88\u8d39\u91d1\u989d\u6392\u7b2c\u4e09\uff08$0.022\uff09\uff0c\u4f46\u4f7f\u7528\u6700\u9891\u7e41\uff083\u6b21\u8c03\u7528\uff09\uff0cToken\u7528\u91cf\u4e5f\u6700\u5927\uff082,280\uff09\uff0c\u5c5e\u4e8e\u6d3b\u8dc3\u7528\u6237\n- \u76ee\u524d\u6574\u4f53\u6d88\u8d39\u91d1\u989d\u8f83\u5c0f\uff0c\u5e73\u53f0\u5904\u4e8e\u65e9\u671f\u4f7f\u7528\u9636\u6bb5\n\n\u5982\u679c\u9700\u8981\u66f4\u6df1\u5165\u7684\u5927\u5ba2\u6237\u5206\u6790\uff0c\u6211\u53ef\u4ee5\u5e2e\u4f60\u67e5\u8be2\uff1a\n- \u7528\u6237\u5145\u503c\u8bb0\u5f55\n- \u6309\u65f6\u95f4\u6bb5\u7edf\u8ba1\u6d88\u8d39\u8d8b\u52bf\n- \u5404\u7528\u6237\u4f7f\u7528\u7684\u6a21\u578b\u7c7b\u578b\u504f\u597d",
+      "sql": null,
+      "created_at": "2026-04-15 11:42:54.365536"
+    },
+    {
+      "id": "7e8f22a1-b7b5-4962-be62-95073042193c",
+      "role": "user",
+      "content": "\u770b\u4e0badmin\u7528\u6237\u6d88\u8017\u7684token\u91cf",
+      "sql": null,
+      "created_at": "2026-04-15 14:28:36.203136"
+    },
+    {
+      "id": "d69fdd36-e5c1-4f62-9f01-94ff169e636d",
+      "role": "assistant",
+      "content": "\u6839\u636e\u67e5\u8be2\u7ed3\u679c\uff0c**admin\u7528\u6237**\u7684token\u6d88\u8017\u60c5\u51b5\u5982\u4e0b\uff1a\n\n\ud83d\udcca **\u6d88\u8017\u7edf\u8ba1**\n- **\u603b\u8bf7\u6c42\u6570**\uff1a1\u6b21\n- **\u8f93\u5165Token**\uff1a300\u4e2a\n- **\u8f93\u51faToken**\uff1a800\u4e2a\n- **\u603bToken\u91cf**\uff1a1,100\u4e2a\n- **\u603b\u6d88\u8d39\u91d1\u989d**\uff1a0.045\u5143\n\n\u4ece\u6570\u636e\u6765\u770b\uff0cadmin\u7528\u6237\u76ee\u524d\u4f7f\u7528\u91cf\u8f83\u5c11\uff0c\u4ec5\u8fdb\u884c\u4e861\u6b21API\u8c03\u7528\uff0c\u8f93\u51fatoken\u662f\u8f93\u5165token\u7684\u7ea62.7\u500d\uff0c\u6d88\u8d39\u91d1\u989d\u4e3a4.5\u5206\u94b1\u3002",
+      "sql": null,
+      "created_at": "2026-04-15 14:28:55.611931"
+    },
+    {
+      "id": "391486ba-1c12-4774-be6c-1ebcc4bb7af9",
+      "role": "user",
+      "content": "\u770b\u4e0badmin\u7528\u6237\u6d88\u8017\u7684token\u91cf",
+      "sql": null,
+      "created_at": "2026-04-15 14:29:26.411481"
+    },
+    {
+      "id": "1e69ecc7-0536-4057-8018-e569adc4a961",
+      "role": "assistant",
+      "content": "\u6839\u636e\u67e5\u8be2\u7ed3\u679c\uff0cadmin\u7528\u6237\u7684token\u6d88\u8017\u60c5\u51b5\u5982\u4e0b\uff1a\n\n**admin\u7528\u6237token\u6d88\u8017\u7edf\u8ba1\uff1a**\n\n| \u6307\u6807 | \u6570\u91cf |\n|------|------|\n| \u603b\u8f93\u5165tokens | 300 |\n| \u603b\u8f93\u51fatokens | 800 |\n| \u603btokens | 1,100 |\n| \u603b\u8bf7\u6c42\u6b21\u6570 | 1\u6b21 |\n\n**\u603b\u7ed3\uff1a**\nadmin\u7528\u6237\u76ee\u524d\u53ea\u67091\u6b21\u4f7f\u7528\u8bb0\u5f55\uff0c\u603b\u5171\u6d88\u8017\u4e861,100\u4e2atokens\u3002\u5176\u4e2d\u8f93\u5165tokens\u5360300\u4e2a\uff0c\u8f93\u51fatokens\u5360800\u4e2a\uff0c\u8f93\u51fatokens\u662f\u8f93\u5165tokens\u7684\u7ea62.7\u500d\uff0c\u8bf4\u660e\u8be5\u8bf7\u6c42\u4ea7\u751f\u4e86\u8f83\u591a\u7684\u8f93\u51fa\u5185\u5bb9\u3002",
+      "sql": null,
+      "created_at": "2026-04-15 14:29:44.236498"
+    }
+  ]
+}
