@@ -1,19 +1,45 @@
-"""DataLens Agent supporting multiple model providers"""
+"""DataLens Agent supporting multiple model providers
+
+Optimized with:
+- Prompt caching for Anthropic API
+- Modular prompt templates
+- SQL security validation
+"""
+
 import json
-from typing import Optional
+from typing import Optional, List
 from agent.database import DatabaseManager
 from agent.config import ModelConfig, DatabaseConfig, ConfigManager
 from agent.mcp_client import MCPClientWrapper
+from agent.prompts import (
+    ANTHROPIC_SYSTEM_PROMPT,
+    OPENAI_SYSTEM_PROMPT,
+    QWEN_SYSTEM_PROMPT,
+    ZIPMU_SYSTEM_PROMPT,
+    SQL_GENERATION_PROMPT,
+    SQL_RESULT_INTERPRET_PROMPT,
+)
+from agent.security import SQLValidator, InjectionDetector
 
 
 class NL2SQLAgent:
     """DataLens Agent that converts natural language to SQL queries"""
 
-    def __init__(self, model_config: ModelConfig, db_config: DatabaseConfig, config_manager: Optional[ConfigManager] = None, use_mcp: bool = True):
+    def __init__(
+        self,
+        model_config: ModelConfig,
+        db_config: DatabaseConfig,
+        config_manager: Optional[ConfigManager] = None,
+        use_mcp: bool = True
+    ):
         self.model_config = model_config
         self.use_mcp = use_mcp
         self.db_name = db_config.name
         self._schema = None
+
+        # Security components
+        self.sql_validator = SQLValidator()
+        self.injection_detector = InjectionDetector()
 
         if self.use_mcp and config_manager:
             # Use MCP Client
@@ -60,8 +86,35 @@ class NL2SQLAgent:
         else:
             raise ValueError(f"Unsupported provider: {provider}")
 
+    def _validate_sql(self, sql: str) -> str:
+        """
+        Validate SQL and return safe SQL
+
+        Raises ValueError if SQL is invalid or dangerous
+        """
+        # Check for injection attempts
+        if not self.injection_detector.is_safe(sql):
+            risk_level = self.injection_detector.get_risk_level(sql)
+            raise ValueError(f"SQL injection detected (risk: {risk_level}). Query rejected.")
+
+        # Validate query type and patterns
+        is_valid, errors, warnings = self.sql_validator.validate(sql)
+
+        if not is_valid:
+            raise ValueError(f"SQL validation failed: {'; '.join(errors)}")
+
+        # Log warnings if any
+        if warnings:
+            import logging
+            logger = logging.getLogger(__name__)
+            for warning in warnings:
+                logger.warning(f"SQL warning: {warning}")
+
+        # Add safe limit if not present
+        return self.sql_validator.get_safe_limit(sql)
+
     async def _call_anthropic(self, user_query: str) -> str:
-        """Call Anthropic Claude API"""
+        """Call Anthropic Claude API with prompt caching"""
         # Ensure schema is loaded
         await self._ensure_schema_loaded()
 
@@ -82,20 +135,13 @@ class NL2SQLAgent:
             }
         ]
 
+        # Build system prompt with schema
+        system_content = f"{ANTHROPIC_SYSTEM_PROMPT}\n\nDatabase Schema:\n{self.schema}"
+
         messages = [
             {
                 "role": "user",
-                "content": f"""You are a SQL expert. Convert the user's natural language query to SQL.
-
-Database Schema:
-{self.schema}
-
-User Query: {user_query}
-
-Guidelines:
-1. First generate the SQL query based on the schema
-2. Use the execute_query tool to run it
-3. Analyze the results and provide a natural language response""",
+                "content": user_query,
             }
         ]
 
@@ -104,6 +150,13 @@ Guidelines:
             response = self.client.messages.create(
                 model=self.model_config.model_name,
                 max_tokens=self.model_config.max_tokens,
+                system=[
+                    {
+                        "type": "text",
+                        "text": system_content,
+                        "cache_control": {"type": "ephemeral"}  # Prompt caching
+                    }
+                ],
                 tools=tools,
                 messages=messages,
             )
@@ -125,11 +178,27 @@ Guidelines:
                         if block.name == "execute_query":
                             try:
                                 sql = block.input["sql"]
-                                # Use MCP or legacy database manager
+
+                                # Validate SQL
+                                try:
+                                    sql = self._validate_sql(sql)
+                                except ValueError as e:
+                                    tool_results.append(
+                                        {
+                                            "type": "tool_result",
+                                            "tool_use_id": block.id,
+                                            "content": f"SQL Validation Error: {e}",
+                                            "is_error": True,
+                                        }
+                                    )
+                                    continue
+
+                                # Execute query
                                 if self.use_mcp:
                                     results = await self.mcp_client.execute_query(self.db_name, sql)
                                 else:
                                     results = self.db_manager.execute_query(sql)
+
                                 tool_results.append(
                                     {
                                         "type": "tool_result",
@@ -157,17 +226,10 @@ Guidelines:
 
     def _call_qwen(self, user_query: str) -> str:
         """Call Qwen API (Alibaba Tongyi)"""
-        prompt = f"""You are a SQL expert. Convert the user's natural language query to SQL and execute it.
-
-Database Schema:
-{self.schema}
-
-User Query: {user_query}
-
-Instructions:
-1. Generate the appropriate SQL query
-2. Execute it against the database
-3. Return the results in natural language format"""
+        prompt = QWEN_SYSTEM_PROMPT.format(
+            schema=self.schema,
+            user_query=user_query
+        )
 
         try:
             response = self.generation.call(
@@ -184,17 +246,10 @@ Instructions:
         messages = [
             {
                 "role": "user",
-                "content": f"""You are a SQL expert. Convert the user's natural language query to SQL.
-
-Database Schema:
-{self.schema}
-
-User Query: {user_query}
-
-Provide:
-1. The generated SQL query
-2. Execute and return results
-3. Natural language explanation""",
+                "content": ZIPMU_SYSTEM_PROMPT.format(
+                    schema=self.schema,
+                    user_query=user_query
+                ),
             }
         ]
 
@@ -210,23 +265,14 @@ Provide:
             return f"Error calling Zhipu: {e}"
 
     async def _call_openai_compatible(self, user_query: str) -> str:
-        """Call OpenAI-compatible API (支持阿里云、智谱等兼容接口)"""
+        """Call OpenAI-compatible API"""
         # Ensure schema is loaded
         await self._ensure_schema_loaded()
 
         messages = [
             {
                 "role": "system",
-                "content": f"""You are a SQL expert. You have access to the following database schema:
-
-{self.schema}
-
-IMPORTANT RULES:
-1. Carefully analyze the user's query for any filtering conditions (e.g., "VIP会员", "VIP用户", "会员用户" means filtering by level field)
-2. If user asks about specific member types, use WHERE level='VIP会员' or similar conditions
-3. Do NOT count all records when user asks about a specific subset
-4. Always wrap your SQL in ```sql``` code block
-5. After execution, summarize results in natural language matching the original query"""
+                "content": OPENAI_SYSTEM_PROMPT.format(schema=self.schema)
             },
             {
                 "role": "user",
@@ -250,6 +296,12 @@ IMPORTANT RULES:
 
             if sql_query:
                 try:
+                    # Validate SQL
+                    try:
+                        sql_query = self._validate_sql(sql_query)
+                    except ValueError as e:
+                        return f"SQL Validation Error: {e}"
+
                     # 执行SQL
                     if self.use_mcp:
                         results = await self.mcp_client.execute_query(self.db_name, sql_query)
@@ -261,7 +313,10 @@ IMPORTANT RULES:
                     messages.append({"role": "assistant", "content": assistant_response})
                     messages.append({
                         "role": "user",
-                        "content": f"SQL执行成功，返回 {result_count} 条记录，结果如下（最多显示10条）：\n{json.dumps(results[:10], ensure_ascii=False, default=str)}\n\n请用自然语言总结这些结果。注意：在回复中不要重复显示SQL代码块，我已经在前面展示过了。"
+                        "content": SQL_RESULT_INTERPRET_PROMPT.format(
+                            result_count=result_count,
+                            results=json.dumps(results[:10], ensure_ascii=False, default=str)
+                        )
                     })
 
                     final_response = self.client.chat.completions.create(
