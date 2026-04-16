@@ -35,7 +35,12 @@ async def chat(request: ChatRequest):
     # Get response from agent
     try:
         start_time = time.time()
-        response = await agent_service.query(request.query, request.database)
+        # Pass session_id to agent service for memory continuity
+        response = await agent_service.query(
+            request.query,
+            request.database,
+            session_id=request.session_id or conv.id  # Use session_id or conversation_id
+        )
         sql = agent_service.extract_sql(response)
         duration = time.time() - start_time
 

@@ -1,19 +1,21 @@
-"""Agent service wrapper for DataLens"""
+"""Agent service wrapper for DataLens with session memory support"""
 from agent.agent import NL2SQLAgent
 from agent.config import ConfigManager
+from agent.memory import SessionMemory
 from api.services.mcp_service import MCPService
-from typing import Optional
+from typing import Optional, Dict
 import re
 
 
 class AgentService:
-    """Service wrapper for NL2SQLAgent"""
+    """Service wrapper for NL2SQLAgent with session support"""
 
     _instance = None
 
     def __init__(self, config_path: str = "config.json"):
         self.config_manager = ConfigManager(config_path)
         self._agent_cache: dict = {}
+        self._memory_store: Dict[str, SessionMemory] = {}  # session_id -> memory
         self.use_mcp = self.config_manager.config.use_mcp
 
     @classmethod
@@ -34,46 +36,70 @@ class AgentService:
                     pass
         cls._instance = None
 
-    def get_agent(self, db_name: Optional[str] = None) -> NL2SQLAgent:
-        """Get or create agent for database"""
+    def get_agent(self, db_name: Optional[str] = None, memory: Optional[SessionMemory] = None) -> NL2SQLAgent:
+        """Get or create agent for database with optional session memory"""
         actual_db = db_name or self.config_manager.config.current_database
         db_config = self.config_manager.get_database(actual_db)
 
         if not db_config:
             raise ValueError(f"Database '{actual_db}' not found")
 
-        # If using MCP, reuse agent instances (MCP handles connection pooling)
-        if self.use_mcp:
-            if actual_db not in self._agent_cache:
-                agent = NL2SQLAgent(
-                    self.config_manager.config.model,
-                    db_config,
-                    config_manager=self.config_manager,
-                    use_mcp=True
-                )
-                self._agent_cache[actual_db] = agent
-            return self._agent_cache[actual_db]
+        # Create agent with memory (each agent has its own memory)
+        agent = NL2SQLAgent(
+            self.config_manager.config.model,
+            db_config,
+            config_manager=self.config_manager,
+            use_mcp=self.use_mcp,
+            session_memory=memory  # Pass memory to agent
+        )
+        return agent
+
+    async def query(self, query: str, db_name: Optional[str] = None, session_id: Optional[str] = None) -> str:
+        """
+        Execute query and return response
+
+        Args:
+            query: User's natural language query
+            db_name: Database name (optional, uses default)
+            session_id: Session ID for memory continuity (optional)
+
+        Returns:
+            Natural language response
+        """
+        # Get or create memory for session
+        if session_id:
+            memory = self._memory_store.get(session_id)
+            if memory is None:
+                memory = SessionMemory()
+                memory.session_id = session_id
+                self._memory_store[session_id] = memory
         else:
-            # Legacy mode: create new agent each time
-            if actual_db in self._agent_cache:
-                try:
-                    self._agent_cache[actual_db].close()
-                except:
-                    pass
+            memory = None
 
-            agent = NL2SQLAgent(
-                self.config_manager.config.model,
-                db_config,
-                config_manager=self.config_manager,
-                use_mcp=False
-            )
-            self._agent_cache[actual_db] = agent
-            return agent
+        # Get agent with memory
+        agent = self.get_agent(db_name, memory)
+        response = await agent.query(query)
 
-    async def query(self, query: str, db_name: Optional[str] = None) -> str:
-        """Execute query and return response"""
-        agent = self.get_agent(db_name)
-        return await agent.query(query)
+        # Update memory store if session
+        if session_id and agent.memory:
+            self._memory_store[session_id] = agent.memory
+
+        return response
+
+    def clear_session(self, session_id: str) -> bool:
+        """
+        Clear memory for a specific session
+
+        Args:
+            session_id: Session ID to clear
+
+        Returns:
+            True if session was found and cleared
+        """
+        if session_id in self._memory_store:
+            del self._memory_store[session_id]
+            return True
+        return False
 
     def extract_sql(self, text: str) -> Optional[str]:
         """Extract SQL from response text"""

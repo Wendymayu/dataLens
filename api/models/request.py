@@ -8,6 +8,7 @@ class ChatRequest(BaseModel):
     query: str = Field(..., description="Natural language query")
     conversation_id: Optional[str] = Field(None, description="Conversation ID")
     database: Optional[str] = Field(None, description="Database name to use")
+    session_id: Optional[str] = Field(None, description="Session ID for memory continuity")
 
 
 class DatabaseCreateRequest(BaseModel):
