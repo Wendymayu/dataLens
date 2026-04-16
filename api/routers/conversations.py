@@ -21,7 +21,8 @@ async def create_conversation(request: ConversationCreateRequest = None):
     """Create new conversation"""
     conv_service = ConversationService()
     title = request.title if request else None
-    conv = conv_service.create_conversation(title=title)
+    menu_type = request.menu_type if request else "smart-query"
+    conv = conv_service.create_conversation(title=title, menu_type=menu_type)
 
     return ConversationResponse(
         id=conv.id,
@@ -29,7 +30,8 @@ async def create_conversation(request: ConversationCreateRequest = None):
         database=conv.database,
         created_at=conv.created_at,
         updated_at=conv.updated_at,
-        messages=[]
+        messages=[],
+        menu_type=conv.menu_type
     )
 
 
@@ -59,7 +61,8 @@ async def get_conversation(conv_id: str):
         database=conv.database,
         created_at=conv.created_at,
         updated_at=conv.updated_at,
-        messages=messages
+        messages=messages,
+        menu_type=conv.menu_type
     )
 
 

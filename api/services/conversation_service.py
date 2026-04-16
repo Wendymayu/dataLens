@@ -28,6 +28,7 @@ class Conversation(BaseModel):
     created_at: datetime
     updated_at: datetime
     messages: List[Message] = []
+    menu_type: str = "smart-query"  # smart-query, adhoc-query, alert
 
 
 class ConversationService:
@@ -49,7 +50,8 @@ class ConversationService:
                         "title": data["title"],
                         "created_at": data["created_at"],
                         "updated_at": data["updated_at"],
-                        "message_count": len(data.get("messages", []))
+                        "message_count": len(data.get("messages", [])),
+                        "menu_type": data.get("menu_type", "smart-query")  # 兼容旧数据
                     })
             except Exception:
                 continue
@@ -73,7 +75,8 @@ class ConversationService:
     def create_conversation(
         self,
         title: Optional[str] = None,
-        database: Optional[str] = None
+        database: Optional[str] = None,
+        menu_type: str = "smart-query"
     ) -> Conversation:
         """Create new conversation"""
         # Clean up old conversations if exceed limit
@@ -87,7 +90,8 @@ class ConversationService:
             database=database,
             created_at=now,
             updated_at=now,
-            messages=[]
+            messages=[],
+            menu_type=menu_type
         )
         self._save_conversation(conv)
         return conv

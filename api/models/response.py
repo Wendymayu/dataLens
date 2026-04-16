@@ -53,6 +53,7 @@ class ConversationResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     messages: List[MessageResponse]
+    menu_type: Optional[str] = "smart-query"
 
 
 class ConversationListItem(BaseModel):
@@ -62,6 +63,7 @@ class ConversationListItem(BaseModel):
     created_at: datetime
     updated_at: datetime
     message_count: int
+    menu_type: Optional[str] = "smart-query"
 
 
 class ProviderInfo(BaseModel):

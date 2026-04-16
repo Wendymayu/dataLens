@@ -4,13 +4,11 @@ import type { DatabaseInfo } from '@/types/database'
 
 defineProps<{
   currentDb?: DatabaseInfo
-  sidebarCollapsed?: boolean
   databases?: DatabaseInfo[]
 }>()
 
 const emit = defineEmits<{
   openSettings: []
-  toggleSidebar: []
   setDb: [name: string]
 }>()
 </script>
@@ -18,19 +16,11 @@ const emit = defineEmits<{
 <template>
   <header class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <button
-        @click="emit('toggleSidebar')"
-        class="p-2 hover:bg-gray-100 rounded-lg"
-        :title="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
-      >
-        <Icon :icon="sidebarCollapsed ? 'lucide:panel-right' : 'lucide:panel-left'" class="w-5 h-5 text-gray-600" />
-      </button>
-
       <!-- Database Selector -->
       <select
         :value="currentDb?.name || ''"
         @change="emit('setDb', $event.target.value)"
-        class="text-sm border border-gray-200 rounded px-2 py-1 bg-white"
+        class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         :disabled="!databases || databases.length === 0"
       >
         <option value="" disabled>选择数据库</option>
@@ -42,11 +32,18 @@ const emit = defineEmits<{
           {{ db.name }} ({{ db.database }})
         </option>
       </select>
+
+      <!-- Connection Status -->
+      <div v-if="currentDb" class="flex items-center gap-1.5 text-xs text-gray-500">
+        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+        已连接
+      </div>
     </div>
 
     <button
       @click="emit('openSettings')"
-      class="p-2 hover:bg-gray-100 rounded-lg"
+      class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+      title="设置"
     >
       <Icon icon="lucide:settings" class="w-5 h-5 text-gray-600" />
     </button>

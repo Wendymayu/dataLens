@@ -71,8 +71,11 @@ export const conversationApi = {
     return response.data
   },
 
-  async create(title?: string): Promise<any> {
-    const response = await api.post('/conversations', { title })
+  async create(menuType?: string, title?: string): Promise<any> {
+    const response = await api.post('/conversations', {
+      title,
+      menu_type: menuType || 'smart-query'
+    })
     return response.data
   },
 

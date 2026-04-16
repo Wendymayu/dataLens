@@ -1,3 +1,6 @@
+// Menu type for conversation categorization
+export type MenuType = 'smart-query' | 'adhoc-query' | 'alert'
+
 // Chat related types
 export interface Message {
   id: string
@@ -15,6 +18,7 @@ export interface Conversation {
   created_at: string
   updated_at: string
   messages: Message[]
+  menu_type?: MenuType  // 所属菜单类型
 }
 
 export interface ConversationListItem {
@@ -23,6 +27,7 @@ export interface ConversationListItem {
   created_at: string
   updated_at: string
   message_count: number
+  menu_type?: MenuType  // 所属菜单类型
 }
 
 export interface ChatRequest {

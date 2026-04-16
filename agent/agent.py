@@ -136,11 +136,17 @@ class NL2SQLAgent:
         Process user query using ReAct loop
 
         Args:
-            user_query: User's natural language question
+            user_query: User's natural language question or SQL query
 
         Returns:
             Natural language answer
         """
+        # Check if user input is a direct SQL query
+        if self._is_sql_query(user_query):
+            sql = self._extract_direct_sql(user_query)
+            if sql:
+                return await self._handle_direct_sql(user_query, sql)
+
         # Ensure schema is loaded
         await self._ensure_schema_loaded()
 
@@ -180,6 +186,101 @@ class NL2SQLAgent:
         self.memory.add_query(record)
 
         return result.answer
+
+    async def _handle_direct_sql(self, user_query: str, sql: str) -> str:
+        """
+        Handle direct SQL execution with self-correction
+
+        Args:
+            user_query: Original user query
+            sql: Extracted SQL
+
+        Returns:
+            Natural language answer
+        """
+        logger.info(f"Detected direct SQL query: {sql}")
+
+        # Execute SQL with correction
+        result = await self._execute_direct_sql(sql)
+
+        # Build answer
+        if result["success"]:
+            data = result["data"]
+
+            # Check if SQL was corrected
+            if result.get("original_sql"):
+                answer = f"✅ 您的SQL有误，已自动修正并执行。\n\n"
+                answer += f"**原始SQL：**\n```sql\n{result['original_sql']}\n```\n\n"
+                answer += f"**修正后SQL：**\n```sql\n{result['sql']}\n```\n\n"
+            else:
+                answer = f"✅ SQL执行成功。\n\n```sql\n{result['sql']}\n```\n\n"
+
+            # Format results
+            if isinstance(data, list):
+                if len(data) == 0:
+                    answer += "查询结果为空（0条记录）。"
+                elif len(data) <= 20:
+                    answer += f"**查询结果（{len(data)}条记录）：**\n"
+                    answer += self._format_data_table(data)
+                else:
+                    answer += f"**查询结果（共{len(data)}条记录，显示前20条）：**\n"
+                    answer += self._format_data_table(data[:20])
+            else:
+                answer += f"结果：{data}"
+
+            # Record in memory
+            record = QueryRecord(
+                natural_query=user_query,
+                sql=result["sql"],
+                success=True,
+                result_count=len(data) if isinstance(data, list) else 0,
+                answer=answer
+            )
+            self.memory.add_query(record)
+
+            return answer
+
+        else:
+            # Execution failed
+            error = result["error"]
+            history = result.get("correction_history", [])
+
+            answer = f"❌ SQL执行失败。\n\n"
+            answer += f"**执行的SQL：**\n```sql\n{result['sql']}\n```\n\n"
+            answer += f"**错误信息：**\n{error}\n\n"
+
+            # Show correction attempts if any
+            if len(history) > 1:
+                answer += "**尝试的修正：**\n"
+                for h in history:
+                    answer += f"- 第{h['attempt']}次: {h.get('corrected_sql', h['sql'])}\n"
+                    answer += f"  错误: {h['error']}\n"
+
+            # Provide suggestion
+            answer += "\n**建议：**\n"
+            answer += "请检查SQL语法是否正确，表名和字段名是否存在。"
+            answer += "您可以输入自然语言问题，我会帮您生成正确的SQL。"
+
+            # Record in memory
+            record = QueryRecord(
+                natural_query=user_query,
+                sql=result["sql"],
+                success=False,
+                error=error,
+                answer=answer
+            )
+            self.memory.add_query(record)
+
+            return answer
+
+    def _format_data_table(self, data: List[Dict]) -> str:
+        """Format data as a readable table"""
+        if not data:
+            return ""
+
+        import json
+        # Use JSON format for clean display
+        return f"```json\n{json.dumps(data, ensure_ascii=False, default=str, indent=2)}\n```"
 
     def _create_db_manager_executor(self) -> ToolExecutor:
         """Create tool executor wrapper for db_manager"""
@@ -291,3 +392,163 @@ class NL2SQLAgent:
             return match.group(1).strip().rstrip(';')
 
         return None
+
+    def _is_sql_query(self, user_input: str) -> bool:
+        """
+        Check if user input is a valid SQL query
+
+        Args:
+            user_input: User's input string
+
+        Returns:
+            True if the input appears to be a SQL query
+        """
+        import re
+
+        # Clean the input
+        cleaned = user_input.strip().strip('`').strip()
+
+        # SQL keywords that start a query
+        sql_start_patterns = [
+            r'^\s*SELECT\s+',           # SELECT statement
+            r'^\s*SHOW\s+',             # SHOW statement
+            r'^\s*DESCRIBE\s+',         # DESCRIBE statement
+            r'^\s*DESC\s+',             # DESC shorthand
+            r'^\s*EXPLAIN\s+',          # EXPLAIN statement
+        ]
+
+        # Check if starts with SQL keyword
+        for pattern in sql_start_patterns:
+            if re.match(pattern, cleaned, re.IGNORECASE):
+                return True
+
+        # Check for SQL in code block
+        if '```sql' in user_input.lower():
+            return True
+
+        return False
+
+    def _extract_direct_sql(self, user_input: str) -> Optional[str]:
+        """
+        Extract SQL from direct SQL input
+
+        Args:
+            user_input: User's input string
+
+        Returns:
+            Clean SQL string or None
+        """
+        import re
+
+        # Clean the input
+        cleaned = user_input.strip()
+
+        # Remove code block markers if present
+        if '```sql' in cleaned.lower():
+            match = re.search(r'```sql\s*(.*?)\s*```', cleaned, re.DOTALL | re.IGNORECASE)
+            if match:
+                return match.group(1).strip().rstrip(';')
+        elif '```' in cleaned:
+            match = re.search(r'```\s*(.*?)\s*```', cleaned, re.DOTALL)
+            if match:
+                return match.group(1).strip().rstrip(';')
+
+        # Direct SQL - clean it
+        cleaned = cleaned.strip('`').strip().rstrip(';')
+
+        # Validate it's actually SQL
+        if re.match(r'^\s*(SELECT|SHOW|DESCRIBE|DESC|EXPLAIN)\s+', cleaned, re.IGNORECASE):
+            return cleaned
+
+        return None
+
+    async def _execute_direct_sql(
+        self,
+        sql: str,
+        max_correction_attempts: int = 2
+    ) -> Dict[str, Any]:
+        """
+        Execute SQL directly with self-correction on errors
+
+        Args:
+            sql: SQL query to execute
+            max_correction_attempts: Maximum correction attempts
+
+        Returns:
+            Result dict with success, data/error, and correction info
+        """
+        await self._ensure_schema_loaded()
+
+        current_sql = sql
+        attempts = 0
+        correction_history = []
+
+        while attempts <= max_correction_attempts:
+            attempts += 1
+
+            # Validate SQL security
+            try:
+                safe_sql = self._validate_sql(current_sql)
+            except ValueError as e:
+                return {
+                    "success": False,
+                    "error": str(e),
+                    "sql": current_sql,
+                    "correction_history": correction_history
+                }
+
+            # Execute the query
+            try:
+                if self.use_mcp:
+                    result = await self.mcp_client.execute_query(self.db_name, safe_sql)
+                else:
+                    result = self.db_manager.execute_query(safe_sql)
+
+                # Success!
+                return {
+                    "success": True,
+                    "data": result,
+                    "sql": current_sql,
+                    "original_sql": sql if current_sql != sql else None,
+                    "correction_history": correction_history,
+                    "attempts": attempts
+                }
+
+            except Exception as e:
+                error_msg = str(e)
+                logger.warning(f"SQL execution failed (attempt {attempts}): {error_msg}")
+
+                # Record this attempt
+                correction_history.append({
+                    "attempt": attempts,
+                    "sql": current_sql,
+                    "error": error_msg
+                })
+
+                # Try to correct the SQL
+                if attempts <= max_correction_attempts:
+                    corrected = await self.self_corrector.correct_sql(
+                        sql=current_sql,
+                        error=error_msg,
+                        schema=self._schema or ""
+                    )
+
+                    if corrected and corrected != current_sql:
+                        logger.info(f"SQL corrected: {corrected}")
+                        correction_history[-1]["corrected_sql"] = corrected
+                        current_sql = corrected
+                    else:
+                        # Cannot correct further
+                        break
+                else:
+                    break
+
+        # All attempts failed
+        return {
+            "success": False,
+            "error": correction_history[-1]["error"] if correction_history else "Unknown error",
+            "sql": current_sql,
+            "original_sql": sql if current_sql != sql else None,
+            "correction_history": correction_history,
+            "attempts": attempts
+        }

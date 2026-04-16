@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { chatApi, conversationApi } from '@/services/api'
-import type { Message, Conversation, ConversationListItem, ChatResponse } from '@/types/chat'
+import { useAppStore } from '@/stores/appStore'
+import type { Message, Conversation, ConversationListItem, ChatResponse, MenuType } from '@/types/chat'
 
 export const useChatStore = defineStore('chat', () => {
   const conversations = ref<ConversationListItem[]>([])
@@ -11,6 +12,26 @@ export const useChatStore = defineStore('chat', () => {
   const error = ref<string | null>(null)
 
   const currentTitle = computed(() => currentConversation.value?.title || 'New Chat')
+
+  // 根据当前菜单过滤会话
+  const filteredConversations = computed(() => {
+    const appStore = useAppStore()
+    const currentMenu = appStore.currentMenu
+
+    // settings 菜单没有会话
+    if (currentMenu === 'settings') {
+      return []
+    }
+
+    // 过滤当前菜单类型的会话，兼容没有 menu_type 的旧数据
+    return conversations.value.filter(conv => {
+      if (!conv.menu_type) {
+        // 旧数据默认归为 smart-query
+        return currentMenu === 'smart-query'
+      }
+      return conv.menu_type === currentMenu
+    })
+  })
 
   async function loadConversations() {
     try {
@@ -29,9 +50,13 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function createConversation() {
+  async function createConversation(menuType?: MenuType) {
     try {
-      const conv = await conversationApi.create()
+      // 获取当前菜单类型
+      const appStore = useAppStore()
+      const type = menuType || (appStore.currentMenu !== 'settings' ? appStore.currentMenu as MenuType : 'smart-query')
+
+      const conv = await conversationApi.create(type)
       currentConversation.value = conv
       messages.value = []
       await loadConversations()
@@ -113,6 +138,7 @@ export const useChatStore = defineStore('chat', () => {
 
   return {
     conversations,
+    filteredConversations,
     currentConversation,
     messages,
     loading,

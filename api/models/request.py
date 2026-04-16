@@ -34,6 +34,7 @@ class ModelConfigRequest(BaseModel):
 class ConversationCreateRequest(BaseModel):
     """Create conversation request"""
     title: Optional[str] = Field(None, description="Conversation title")
+    menu_type: Optional[str] = Field("smart-query", description="Menu type: smart-query, adhoc-query, alert")
 
 
 class ConversationTitleUpdateRequest(BaseModel):
